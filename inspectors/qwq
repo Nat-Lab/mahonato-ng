@@ -1,0 +1,7 @@
+#!/bin/bash
+
+function qwq {
+  [[ $text =~ ^[pqdb][wuA][pqdb]$ ]] && msg_send "$(tr 'pqdb' 'qpbd' <<< "$text")"
+}
+
+add_msg_inspector qwq
