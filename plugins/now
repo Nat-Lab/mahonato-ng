@@ -1,0 +1,85 @@
+#!/bin/bash
+
+[[ -e tzs/$SENDER.tz ]] && export TZ="$(cat tzs/$SENDER.tz)"
+
+function setGreetStr() {
+        case $(date +%H) in
+                01|02|03|04|05)
+                        preG="凌晨好，"
+                        case $(date +%u) in
+                                1|2|3|4|5) postG="生生不息，摸鱼不止。在这万籁俱寂的凌晨，众生都已睡去，是什么放不下的牵挂，让你还在摸鱼？";;
+                                6|7) postG="生生不息，摸鱼不止。一周之末的凌晨，是摸鱼者的狂欢之时！";;
+                        esac
+                ;;
+                06|07|08|09)
+                        preG="早安，"
+                        case $(date +%u) in
+                                1|2|3|4|5) postG="生生不息，摸鱼不止，早起的人儿有鱼摸。" ;;
+                                6|7) postG="生生不息，摸鱼不止。周末的清晨，早早醒来，抿一口茶，摸着鱼，望众生苏醒，何等享受。";;
+                        esac
+                ;;
+                10|11)
+                        preG="早上好，"
+                        postG="生生不息，摸鱼不止。"
+
+                ;;
+                12|13)
+                        preG="中午好，"
+                        postG="生生不息，摸鱼不止。"
+                ;;
+                14|15|16|17)
+                        preG="下午好，"
+                        postG="生生不息，摸鱼不止。"
+                ;;
+                18|19|20|21|22)
+                        preG="晚上好，"
+                        postG="生生不息，摸鱼不止。人要懂得劳逸结合，摸鱼一天了，应该摸鱼休息一下。"
+                ;;
+                23|00)
+                        preG="深夜好，"
+                        postG="生生不息，摸鱼不止。"
+                ;;
+        esac
+}
+
+
+# today: when is now?
+now() {
+        setGreetStr
+        monlen=$(date -d "$(date +%m)/1month-1day" "+%d")
+        yrlen=$([[ $(date -d "2/1month-1day" "+%d") == 29 ]] && echo 366 || echo 365)
+        eval "$(date +'today=%F now=%s')"
+        midnight=$(date -d "$today 0" +%s)
+        daypass="$((now - midnight))"
+        end_yr="$(bc <<< "$yrlen - $(date +%j)")"
+        end_mo="$(bc <<< "$monlen - $(date +%d)")"
+        end_weekday="$(bc <<< "120 - (($(date +%u)-1)*24+$(date +%H))")"
+        end_weekend="$(bc <<< "48 + $end_weekday")"
+        msg_send "${preG}现在是$(date +"%Y年%m月%d，$(date | cut -d" " -f4)，%H:%M。") ($(date | cut -d" " -f6))
+
+这分钟已经过去了 $(bc <<< "$(date +%S)/0.6")%。
+这小时已经过去了 $(bc <<< "$(date +%M)/0.6")%。
+这一天已经过去了 $(bc <<< "$daypass/864")%。
+这一周已经过去了 $(bc <<< "(($(date +%u)-1)*86400+$daypass)/6048")%。
+这个月已经过去了 $(bc <<< "(($(date +%d)-1)*86400+$daypass)/($monlen*864)")%。
+这一年已经过去了 $(bc <<< "(($(date +%j)-1)*86400+$daypass)/($yrlen*864)")%。
+这世纪已经过去了 $(date +%g)%。$([[ $end_yr -lt 101 ]] && echo "
+还有${end_yr}天，今年就结束了。")$([[ $end_mo -lt 10 ]] && echo "
+还有${end_mo}天，这个月就结束了。")$([[ $end_weekday -lt 49 && $end_weekday -gt 0 ]] && echo "
+还有${end_weekday}小时，周末就到了。")$([[ $end_weekend -lt 11 ]] && echo "
+还有${end_weekend}小时，周末就结束了。")
+
+${postG}"
+}
+
+case $cmd in
+  tz)
+    tz="$(tr -d '.' <<< $cmd_body)"
+    [[ -z $tz ]] && msg_send "用法：/tz <Unix Timezone>" && exit 0
+    [[ ! -e /usr/share/zoneinfo/$tz ]] && msg_send "没有那个时区（$tz）。" && exit 0
+    echo "$tz" > tzs/$SENDER.tz
+    export TZ=$tz
+    msg_send "时区已设定，当地时间：$(date)。"
+  ;;
+  now) now ;;
+esac

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+case $cmd in
+
+        konachan_tag|yande_tag)
+                [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
+                case $cmd in
+                        konachan) server="https://konachan.com"; provider="konachan";;
+                        yande) server="https://yande.re"; provider="yande";;
+                        *) exit 0;;
+                esac
+                [[ ! -z "$cmd_body" ]] && {
+                        list=$(curl -s "$server/post.xml" -d "limit=100" -d "tags=$cmd_body" | awk -F"jpeg_url=\"" '{print $2}' | awk -F\" '{print $1}')
+                        send="$(sed '1,2d;' <<< "$list" | shuf -n1)"
+                        [[ -z $send ]] && send="没有抓到图。"
+                        msg_send "$send"
+                } || msg_send "用法：/${provider}_tag <tag> [tag] ..."
+        ;;
+        konachan|yande)
+                [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
+                case $cmd in
+                        konachan) server="https://konachan.com"; provider="konachan"; cA=4; cB=2;;
+                        yande) server="https://yande.re"; provider="yande"; cA=6; cB=4;;
+                        *) exit 0;;
+                esac
+                res=$(curl -sL "$server/post/random")
+                url=$(grep -a 'original-file-unchanged' <<< "$res" | cut -d'"' -f$cA | head -n1)
+                [[ -z $url ]] && url=$(grep 'og:image' <<< "$res" | cut -d'"' -f$cB) 
+                [[ -z $url ]] && msg_send "拉不到图。" || msg_send "$url"
+        ;;
+        danbooru)
+                msg_send "https://danbooru.donmai.us$(curl -s 'https://danbooru.donmai.us/posts.json?limit=100' | jq '.[] .large_file_url' | shuf -n1 | sed -e 's/^"//; s/"$//;')"
+        ;;
+
+esac

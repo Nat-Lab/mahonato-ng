@@ -1,0 +1,30 @@
+{
+  "./plugins/example": ["about"],
+  "./plugins/maho_core": [
+    "xkcd",
+    "roll",
+    "ping",
+    "bc",
+    "google",
+    "dict",
+    "dig",
+    "whois",
+    "whob",
+    "dice",
+    "btcfee"
+   ],
+   "./plugins/bgp": ["bgp"],
+   "./plugins/wiki": ["wiki"],
+   "./plugins/imgs": [
+     "konachan",
+     "yande",
+     "danbooru",
+     "konachan_tag",
+     "yande_tag"
+   ],
+   "./plugins/marysue": ["emarysue", "dmarysue"],
+   "./plugins/now": ["tz", "now"],
+   "./plugins/bd_translate": ["tr"],
+   "./plugins/cconv": ["ccnov"],
+   "./plugins/bmi": ["bmi"]
+}

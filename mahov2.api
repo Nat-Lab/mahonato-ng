@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# Bot Username (w/o @)
+BOT_USERNAME=''
+
+# Token
+TOKEN=''
+
+# APIs
+URL='https://api.telegram.org/bot'$TOKEN
+MSG_URL=$URL'/sendMessage'
+
+# Log file
+LOG='./bot.log'
+
+# Default TZ and locale
+export LC_ALL=zh_CN.utf-8
+export TZ=Asia/Shanghai
+
+# Logger
+function log {
+  echo "[$(date)] $$ $*" >> $LOG
+}
+
+#### End of Configurable options ####
+
+echo "Content-type: text/html" && echo
+
+# Checks
+[ -z "$REMOTE_ADDR" ] && {
+  echo "REMOTE_ADDR not set, are you running from cli?"
+  exit 0
+}
+
+[[ ! "$QUERY_STRING" == "bot$TOKEN" ]] && {
+  log "Invalid token from $REMOTE_ADDR."
+  exit 0
+}
+
+[ -z "$QUERY_STRING_POST" ] && {
+  log "Correct token from $REMOTE_ADDR but empty body. CGI misconfigured?"
+  exit 0
+}
+
+# Plugins settings
+PLUGINS_CONF='./plugins.json'
+
+# find_handler: Find plugins to handle command
+function find_handler {
+  jq -cr 'to_entries [] | select(.value | index("'$1'")) | .key' "$PLUGINS_CONF"
+}
+
+# msg_send: Send Message
+function msg_send {
+  [ -z $1 ] && {
+    log "didn't sent message, body is empty."
+    return 1
+  }
+  send=$(iconv -f utf-8 -t utf-8//IGNORE <<< "$1")
+  for arg in $msg_send_OPTIONS; do earg="$earg -F $arg"; done
+  [[ ! $c_type == "private" ]] && earg="$earg -F reply_to_message_id=$mid"
+  log "API reply: $(curl -s "$MSG_URL" $earg -F "chat_id=$cid" -F "text=$send")"
+}
+
+# Init bot environment
+jq -cr '.message' <<< "$QUERY_STRING_POST" | while read msg; do {
+  [ "$msg" = null ] && {
+    log "No message was got from update. Maybe it is not a 'message'. Try set allowed_updates in setWebhook."
+    exit 0
+  }
+  jq -cr '.message_id, .text, .chat, .from' <<< "$msg" | while read mid; do {
+    read text; read chat; read from
+    jq -cr '.id, .first_name, .last_name, .username, .language_code' <<< "$from" | while read uid; do {
+      read u_fn; read u_ln; read u_un; read u_lang
+      jq -cr '.id, .type, .title, .username, .first_name, .last_name' <<< "$chat" | while read cid; do {
+        read c_type; read c_title; read c_un; read c_fn; read c_ln
+        # Init env done, message info stored as:
+        #   $text    : Message Text
+        #   $mid     : Message ID
+        #   $uid     : User ID
+        #   $u_fn    : User firstname
+        #   $u_ln    : User lastname
+        #   $u_un    : Username
+        #   $u_lang  : User language
+        #   $cid     : Chat ID
+        #   $c_type  : Chat type
+        #   $c_title : Chat title
+        #   $c_un    : Chat username
+        #   $c_fn    : Chat firstname
+        #   $c_ln    : Chat Lastname
+        [[ -z "$text" || "$text" == "null" ]] && {
+          log "Empty Message? from $uid@$cid."
+          exit 0
+        }
+        log "Incoming message: uid $uid|cid $cid|mid $mid|\"$text\""
+        [[ ! "$text" == '/'* ]] && exit 0
+        cmd="$(cut -d' ' -f1 <<< "$text")"
+        [[ "$cmd" == *"@"* ]] && {
+          to_bot="$(cut -d'@' -f2 <<< "$cmd")"
+          [[ ! "$to_bot" == "$BOT_USERNAME" ]] && exit 0 
+        }
+        cmd_body="$(awk -F"$cmd " '{print $2}' <<< "$text")"
+        cmd="$(sed -e 's/@'$BOT_USERNAME'//; s/\///;' <<< "$cmd")"
+        handler_cmd="$(find_handler "$cmd")"
+        [ -z $handler_cmd ] && {
+          log "No handler for $cmd, exiting"
+          exit 0
+        }
+        log "Procressing: cmd $cmd|body \"$cmd_body\"|handler $handler_cmd"
+        . $handler_cmd
+      }; done
+    }; done
+  }; done
+}; done

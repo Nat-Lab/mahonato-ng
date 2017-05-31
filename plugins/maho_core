@@ -1,0 +1,77 @@
+#!/bin/bash
+
+case $cmd in
+  xkcd)
+    msg_send "$(
+      curl -sL http://c.xkcd.com/random/comic/ \
+        | grep -a 'Image URL' \
+        | awk -F': ' '{print $2}'
+    )"
+  ;;
+  roll)
+     msg_send "${u_un:-$u_fn $u_ln} roll 了 $(shuf -i "0-100" -n 1) 点。"
+  ;;
+  ping)
+     msg_send "pong"
+  ;;
+  bc)
+    [ -z "$cmd_body" ] && {
+      msg_send "用法：/bc <表达式>"
+      exit 0
+    }
+    msg_send "$(bc <<< "$cmd_body")"
+  ;;
+  google)
+    [ -z "$cmd_body" ] && {
+      msg_send "用法：/google <关键词>"
+      exit 0
+    }
+    msg_send_OPTIONS="disable_web_page_preview=true"
+    msg_send "$(googler --tld hk --np -xC -n5 "$cmd_body")"
+  ;;
+  dict)
+    [ -z "$cmd_body" ] && {
+      msg_send "用法：/dict <词语>"
+      exit 0
+    }
+    msg_send "$(dict "$cmd_body")"
+  ;;
+  dig)
+    [[ "$cmd_body" == *"-f"* ]] && {
+      log "WARNING: possible dig exploit attmpt: \"$cmd_body\"|uid $uid|cid $cid"
+      exit 0
+    }
+    msg_send "$(dig "$cmd_body")"
+  ;;
+  whois)
+    msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+    [ -z "$cmd_body" ] && {
+      msg_send "用法：/whois <查询>"
+      exit 0
+    }
+    msg_send "\`\`\`$(whois "$cmd_body")\`\`\`"
+  ;;
+  whob)
+    msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+    [ -z "$cmd_body" ] && {
+      msg_send "用法：/whob <查询>"
+      exit 0
+    }
+    msg_send "\`\`\`$(whob <<< "$cmd_body")\`\`\`"
+  ;;
+  dice)
+    [ -z "$dice" ] && {
+      msg_send "用法：/dice <项目> [项目] [项目] ... [项目]" 
+      exit 0
+    }
+    msg_send "$(tr ' ' '\n' <<< "$cmd_body" | shuf -n1)"
+  ;;
+  btcfee)
+    msg_send "$(
+      curl -s https://bitcoinfees.21.co/api/v1/fees/recommended | jq '.[]|./100' | {
+        read fast; read hhr; read hr;
+        echo "${fast} mBTC/kb | ${hhr} mBTC/kb | ${hr} mBTC/kb"
+      }
+    )"
+  ;;
+esac

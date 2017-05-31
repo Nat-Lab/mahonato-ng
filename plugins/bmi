@@ -1,0 +1,20 @@
+#!/bin/bash
+
+bmi() {
+        [[ -z $1 ]] && msg_send "示例：
+/bmi 175cm 50kg
+/bmi 183cm 140jin
+/bmi 54kg 1.75m"
+        weight=$(tr ' ' '\n' <<< "$@" | grep -Ei "kg|jin")
+        height=$(tr ' ' '\n' <<< "$@" | grep -Ei "m|cm")
+        [[ -z $weight || -z $height ]] && exit 0
+        [[ $height == *"cm" ]] && hunit=cm || hunit=m
+        [[ $weight == *"jin" ]] && wunit=jin || wuint=kg
+        weight=$(tr -d '[:alpha:]' <<< $weight)
+        height=$(tr -d '[:alpha:]' <<< $height)
+        [[ $hunit == cm ]] && height=$(bc <<< "scale=3; $height/100")
+        [[ $wunit == jin ]] && weight=$(bc <<< "scale=3; $weight/2")
+        bc <<< "scale=1; $weight/($height*$height)"
+}
+
+msg_send "$(bmi $cmd_body)"

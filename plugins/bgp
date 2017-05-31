@@ -1,0 +1,114 @@
+#!/bin/bash
+
+function cc_emoji {
+  grep '"'$1'"' res/cc.json | jq -r '.e'
+}
+
+function bgp {
+  api='https://api.bgpview.io/' query="$1" term="$2"
+
+  [ -z $query ] && {
+    echo "usage: "
+    echo "\`/bgp <IP/IPv6>\` IP/IPv6 info"
+    echo "\`/bgp <ASxxx>\` AS info"
+    echo "\`/bgp peer <ASN>\` AS peer list"
+    echo "\`/bgp prefix <ASN>\` AS prefix list"
+    echo "\`/bgp <desc>\` lookup ASN/Prefixes by desc/name"
+    exit 1
+  }
+
+  [[ $query =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]] && act=ip verb=ip/$query 
+  [[ $query =~ ^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$ ]] && act=ip verb=ip/$query
+  [[ $query == "peer" ]] && act=peer verb=asn/$term/peers
+  [[ $query == "prefix" ]] && act=prefix verb=asn/$term/prefixes
+  [[ $query =~ ^AS[0-9]* ]] && act=asn verb=asn/$(tr -d '[:alpha:]' <<< "$query")
+  [ -z $act ] && act=search verb="search?query_term=$*"
+
+  curl -s --max-time 5 "$api$verb" | {
+    res="$(cat)"
+    [ -z "$res" ] && echo "Error looking up: Empty Respond." && exit 1
+    jq -r '.status' <<< "$res" | {
+      read status
+      [ $status != ok ] && echo "Error looking up: API returned error." && exit 1
+    }
+    jq -rc '.data' <<< "$res" | {
+      case $act in
+        asn) 
+          jq -cr '.asn, .name, .description_short, .country_code' | {
+            read asn; read name; read desc; read cc
+	    echo "$(cc_emoji $cc) [AS${asn}](https://bgpview.io/asn/${asn}) *${name}* _${desc}_"
+	    echo -n "*Prefixes*: "
+	    curl -s --max-time 5 "$api/asn/$asn/prefixes/" | \
+              jq -cr '.data | .ipv4_prefixes, .ipv6_prefixes | .[] | .prefix' | \
+              head -n20 | while read p; do {
+                echo -n "[$p](https://bgpview.io/prefix/$p), "
+              }; done | sed -e 's/, $//;'
+	    echo && echo -n "*Peers*: "
+	    curl -s --max-time 5 "$api/asn/$asn/peers/" | \
+              jq -cr '.data | .ipv4_peers, .ipv6_peers | .[] | .asn' | \
+              sort | uniq | head -n70 | while read a; do {
+                echo -n "[AS$a](https://bgpview.io/asn/$a), "
+              }; done | sed -e 's/, $//;'
+          }
+        ;;
+        prefix)
+          jq -cr '.ipv4_prefixes, .ipv6_prefixes | 
+                  .[] | 
+                  .prefix, .name, .description, .country_code' \
+            | while read prefix; do {
+              read name; read desc; read cc
+	      echo "$(cc_emoji $cc) [${prefix}](https://bgpview.io/prefix/${prefix}) *${name}* _${desc}_"
+            }; done
+        ;;
+        peer)
+          jq -cr '.ipv4_peers, .ipv6_peers' | {
+            read v4; read v6
+            for ptr in v4 v6; do {
+              eval "data=\$$ptr"
+              jq -cr '.[] | .asn, .name, .description, .country_code' <<< "$data" | \
+              while read asn; do {
+                read name; read desc; read cc
+		echo "$(cc_emoji $cc) [AS${asn}](https://bgpview.io/asn/${asn}) *${name}* _${desc}_ IP${ptr}"
+              }; done
+            }; done
+          }
+        ;;
+        ip) 
+          jq -cr '.ip, .ptr_record, .prefixes' | while read ip; do {
+            read ptr; read pfx
+            echo "\`$ip\` ($ptr)"
+            jq -cr '.[] | .prefix, .name, .description, .country_code, .asn .asn, .asn .description, .asn .country_code' <<< "$pfx" | \
+            while read prefix; do {
+              read name; read desc; read cc; read asn; read as_desc; read acc
+	      echo "$(cc_emoji $cc) [${prefix} ${name}](https://bgpview.io/prefix/${prefix}) (_${desc}_) *from* $(cc_emoji $acc) [AS${asn} ${as_desc}](https://bgpview.io/asn/${asn})"
+            }; done
+          }; done 
+        ;;
+        search)
+          jq -cr '.asns, .ipv4_prefixes, .ipv6_prefixes' | {
+            read asns; read ip4; read ip6
+            echo -n "*ASNs*: "
+            jq -cr '.[] | .asn' <<< "$asns" | head -n90 | while read asn; do {
+              read name
+              echo -n "[AS${asn}](https://bgpview.io/asn/${asn}), "
+            }; done | sed -e 's/, $//;'
+            echo && echo -n "*Prefixes*: "
+            jq -cr '.[] | .prefix' <<< "$ip4 $ip6" | head -n90 | while read prefix; do {
+              read name
+              [ -z $name ] && name=null
+              echo -n "[${prefix}](https://bgpview.io/prefix/${prefix}), "
+            }; done | sed -e 's/, $//;'
+          }
+        ;;
+      esac
+    }
+  } 
+}
+
+msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+bgp_res="$(bgp $cmd_body)"
+ns="$(wc -l <<< "$bgp_res")"
+[ $lns -gt 20 ] && {
+  msg_send "$(head -n20 <<< "$bgp_res")
+(Too many results, only first 20 resultes are shown.)"
+} || msg_send "$bgp_res"

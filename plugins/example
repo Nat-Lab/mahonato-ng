@@ -1,0 +1,7 @@
+#!/bin/bash
+
+msg_send "Morichika Maho by Morichika Nat (@magicnat)
+current_title: $c_title
+current_user: $uid
+current_chat: $cid
+current_task: $$"

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+TRANSLATE_TARGETS="zh en yue wyw jp kor fra spa th ara ru pt de it el nl pl bul est dan fin cs rom slo swe hu cht"
+
+translate() {
+
+        [[ -e /tmp/inet4.dead ]] && echo "这个服务暂时不可用。" && return
+
+        [[ -z $3 ]] && echo "用法：/tr <源语言> <到语言> <内容>"
+
+        tr_check_para $1
+        tr_check_para $2
+
+        lfrom=$1
+        lto=$2
+        shift 2
+
+        respond="$(curl -s 'http://fanyi.baidu.com/v2transapi' \
+                        -d "from=$lfrom" -d "to=$lto" \
+                        -d "query=$*" \
+                        -d "transtype=realtime" -d "simple_means_flag=3")"
+
+        result="$(jq ".trans_result .data [] .dst" <<< "$respond" | sed -e 's/^"//; s/"$//;')"
+        [[ ! -z $result ]] && echo "$result" || echo "翻译出错。"
+
+}
+
+tr_check_para() {
+
+        for allow in $TRANSLATE_TARGETS
+        do
+                [[ $allow == $1 ]] && return
+        done
+        echo "可以使用的语言：zh:中文 en:英语 yue:粤语 wyw:文言文 jp:日语 kor:韩语 fra:法语 spa:西班牙语 th:泰语 ara:阿拉伯语 ru:俄语 pt:葡萄牙语 de:德语 it:意大利语 el:希腊语 nl:荷兰语 pl:波兰语 bul:保加利亚语 est:爱沙尼亚语 dan:丹麦语 fin:芬兰语 cs:捷克语 rom:罗马尼亚语 slo:斯洛文尼亚语 swe:瑞典语 hu:匈牙利语 cht:>繁体中文。"
+        exit 0
+
+}
+
+msg_send "$(translate $cmd_body)"

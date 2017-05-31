@@ -1,0 +1,46 @@
+#!/bin/bash
+
+WIKI_PREFIX='en sv ceb de nl fr ru it es war pl vi ja pt zh uk ca fa no ar sh fi hu id ro cs ko sr ms tr eu eo bg min da kk sk hy zh-min-nan he lt hr ce sl et gl nn uz la el be simple vo hi th az ur ka ta mk oc mg cy lv new bs tt tg te tl pms sq br be-tarask ky ht jv zh-yue ast lb ml bn mr af pnb sco is ga ba fy cv sw lmo my an yo ne io gu nds scn bpy pa ku als bar kn ia qu su ckb mn bat-smg arz nap wa gd bug yi am map-bms si mzn fo li or nah sah vec hsb azb os sa mrj hif mhr roa-tara ilo pam xmf eml sd nso ps bh se hak mi bcl diq nds-nl gan glk vls rue bo wuu fiu-vro co mai tk sc szl csb vep lrc km crh gv kv frr zh-classical as so zea cdo lad ay stq udm kw nrm ie koi ace rm pcd myv lij mt fur gn dsb dv cbk-zam ext lez ug kab ang ksh mwl ln gag sn frp pag pi gom nv av pfl xal krc haw kaa bxr rw pdc to nov kl pap arc lo bjn olo kbd jam ha tet tyv ki tpi ig na lbe roa-rup jbo ty kg za mdf lg wo srn ab ltg chr zu sm om bi tcy tn chy rmy cu tw xh tum pih rn got pnt ss ch bm ady mo ts ny iu st fj ee ak ks ik sg ve dz ff ti cr ng cho kj mh ho ii aa mus hz kr'
+
+wiki() {
+
+        [[ -z $2 ]] && echo "用法：/wiki <语言> <条目>
+例：/wiki zh 电子计算机" && return
+
+        (! grep -qE "$1" <<< "$(tr ' ' '\n' <<< "$WIKI_PREFIX")") && {
+                echo "不存在的语言。"
+                return
+        }
+
+        lng=$1
+        shift 1
+
+        respond="$(curl -s "https://$lng.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro=&explaintext=&titles=$*" \
+                | jq ".query .pages [] .extract" \
+                | sed -e 's/^"//; s/"$//; s/\\n//g;')"
+
+        [[ ${#respond} -lt 5 ]] && echo "找不到条目。" && return
+
+        [[ ! -z $respond ]] && echo "$respond" && return
+
+        # not found? try see if there are REDIRECT.
+
+        respond="$(curl -s "https://$lng.wikipedia.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&titles=$*" \
+                | jq ".query .pages [] .revisions [] .\"*\"")"
+
+        [[ "$respond" == '"#REDIRECT[['* ]] && redir="$(cut -d'[' -f3 <<< "$respond" | cut -d']' -f1)" || {
+                echo "找不到条目。"
+                return
+        }
+
+        respond="$(curl -s "https://$lng.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro=&explaintext=&titles=$redir" \
+                | jq ".query .pages [] .extract" \
+                | tr -d '\\n' \
+                | sed -e 's/^"//; s/"$//;')"
+
+        echo "$* => $redir
+$respond"
+
+}
+
+msg_send "$(wiki $cmd_body)"

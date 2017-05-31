@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function cconv {
+        [[ -z $3 ]] && msg_send "用法：/cconv <从货币> <到货币> <金额>" && exit 0
+        [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
+        rate=$(curl -sL "http://finance.yahoo.com/d/quotes.csv?e=.csv&f=sl1d1t1&s=$1$2=X" | cut -d, -f2)
+        log "cconv: from $1 to $2, amount $3."
+        [[ $rate == "N/A" ]] && msg_send "没有那种货币。" && exit 0
+        result="$(bc <<< "scale=2; $3 * $rate")"
+        [[ ! -z $result ]]&& msg_send "$3$1 = $result$2" || msg_send "？"
+        exit 0
+}
+
+cconv $cmd_body

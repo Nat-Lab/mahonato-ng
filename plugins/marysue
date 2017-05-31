@@ -1,0 +1,25 @@
+#!/bin/bash
+
+MARYSUE_API='http://marysue.funnyjs.com/api'
+MARYSUE_ENC=$MARYSUE_API'/encode'
+MARYSUE_DEC=$MARYSUE_API'/decode'
+
+marysue() {
+        [[ -z $2 ]] && return 1
+        case $1 in
+                encode) APItype=source; APIu=$MARYSUE_ENC;;
+                decode) APItype=code; APIu=$MARYSUE_DEC;;
+                *) return 1;
+        esac
+        curl -s "$APIu" -H "Content-Type: application/json" -X POST -d "{$APItype: '$(tr "'" '"' <<< "$2")'}" | cut -d'"' -f4
+}
+
+case $cmd in
+	emarysue) msueAct=encode; pref=e;;
+	dmarysue) msueAct=decode; pref=d;;
+	*) exit 0;;
+esac
+[[ ! -z $cmd_body ]] && {
+	resp="$(marysue $msueAct "$tcmd_body")"
+	[[ -z $resp ]] && msg_send "？" || msg_send "$resp"
+} || msg_send "用法：$this_cmd <内容>"
