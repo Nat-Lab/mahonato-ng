@@ -20,6 +20,6 @@ case $cmd in
 	*) exit 0;;
 esac
 [[ ! -z $cmd_body ]] && {
-	resp="$(marysue $msueAct "$tcmd_body")"
+	resp="$(marysue $msueAct "$cmd_body")"
 	[[ -z $resp ]] && msg_send "？" || msg_send "$resp"
-} || msg_send "用法：$this_cmd <内容>"
+} || msg_send "用法：/$cmd <内容>"
