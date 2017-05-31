@@ -26,5 +26,6 @@
    "./plugins/now": ["tz", "now"],
    "./plugins/bd_translate": ["tr"],
    "./plugins/cconv": ["cconv"],
-   "./plugins/bmi": ["bmi"]
+   "./plugins/bmi": ["bmi"],
+   "./plugins/mute": ["mute", "unmute"]
 }

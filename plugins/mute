@@ -1,0 +1,30 @@
+#!/bin/bash
+
+[[ ! $c_type == *"group" ]] && msg_send "这不是一个群组，不能进行管理。" && exit 0
+curl -s "$URL/getChatMember" -d "chat_id=$cid" -d "user_id=$uid" | jq -cr '.status' | {
+  read stus
+  [[ $stus == creator || $stus == administrator ]] && {
+    [ ! -f ./mute/$cid ] && touch ./mute/$cid
+    [ ! -f ./mute/$cid ] && log "FATAL: can't create mute info file for $cid." && exit 0
+    grep -qE "^$cmd_body$" "./mute/$cid" && exis=true
+    case $cmd in
+      mute) 
+        [ -z $exis ] && {
+          echo "$cmd_body" >> ./mute/$cid
+          log "muted $cmd_body at $cid."
+          echo "Muted $cmd_body."
+        } || echo "$cmd_body was already muted."
+      ;;
+      unmute) 
+        [ -z $exis ] && echo "$cmd_body was not muted." || {
+          log "unmute $cmd_body at $cid."
+          grep -vE "^$cmd_body$" < "./mute/$cid" > "./mute/$cid.tmp"
+          mv "./mute/$cid.tmp" "./mute/$cid"
+        }
+      ;;
+      mutelist)
+        cat "./mute/$cid"
+      ;;
+    esac
+  }
+}

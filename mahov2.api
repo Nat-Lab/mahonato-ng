@@ -8,7 +8,6 @@ TOKEN=''
 
 # APIs
 URL='https://api.telegram.org/bot'$TOKEN
-MSG_URL=$URL'/sendMessage'
 
 # Log file
 LOG='./bot.log'
@@ -50,6 +49,11 @@ function find_handler {
   jq -cr 'to_entries [] | select(.value | index("'$1'")) | .key' "$PLUGINS_CONF"
 }
 
+# Message inspector: functions added by add_msg_inspector will be call everytime bot gets a message
+function add_msg_inspector {
+  MSG_ISPC="$MSG_ISPC $*"
+}
+
 # msg_send: Send Message
 function msg_send {
   [ -z $1 ] && {
@@ -59,8 +63,13 @@ function msg_send {
   send=$(iconv -f utf-8 -t utf-8//IGNORE <<< "$1")
   for arg in $msg_send_OPTIONS; do earg="$earg -F $arg"; done
   [[ ! $c_type == "private" ]] && earg="$earg -F reply_to_message_id=$mid"
-  log "API reply: $(curl -s "$MSG_URL" $earg -F "chat_id=$cid" -F "text=$send")"
+  log "API reply: $(curl -s "$URL/sendMessage" $earg -F "chat_id=$cid" -F "text=$send")"
 }
+
+# Load inspectors
+for INSP in inspectors/*; do {
+  . $INSP
+}; done
 
 # Init bot environment
 jq -cr '.message' <<< "$QUERY_STRING_POST" | {
@@ -94,6 +103,10 @@ jq -cr '.message' <<< "$QUERY_STRING_POST" | {
           exit 0
         }
         log "Incoming message: uid $uid|cid $cid|mid $mid|\"$text\""
+        for ispc in $MSG_ISPC; do {
+          log "Inspecting incoming message using $ispc."
+          $ispc
+        }; done
         [[ ! "$text" == '/'* ]] && exit 0
         cmd="$(cut -d' ' -f1 <<< "$text")"
         [[ "$cmd" == *"@"* ]] && {

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+function mute_worker {
+  [ ! -e ./mute/$cid ] && return 0
+  grep -qE "^($uid|$u_un)$" "./mute/$cid" && {
+    log "$uid/$u_un is in mute list of $cid, deleting."
+    log "API Respond: $(curl -s "$URL/deleteMessage" -F "chat_id=$cid" -F "message_id=$mid")"
+  }
+}
+
+add_msg_inspector mute_worker
