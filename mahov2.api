@@ -104,7 +104,6 @@ jq -cr '.message' <<< "$QUERY_STRING_POST" | {
         }
         log "Incoming message: uid $uid|cid $cid|mid $mid|\"$text\""
         for ispc in $MSG_ISPC; do {
-          log "Inspecting incoming message using $ispc."
           $ispc
         }; done
         [[ ! "$text" == '/'* ]] && exit 0
