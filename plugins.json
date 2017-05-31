@@ -25,6 +25,6 @@
    "./plugins/marysue": ["emarysue", "dmarysue"],
    "./plugins/now": ["tz", "now"],
    "./plugins/bd_translate": ["tr"],
-   "./plugins/cconv": ["ccnov"],
+   "./plugins/cconv": ["cconv"],
    "./plugins/bmi": ["bmi"]
 }

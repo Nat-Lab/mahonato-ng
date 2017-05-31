@@ -41,7 +41,8 @@ case $cmd in
       log "WARNING: possible dig exploit attmpt: \"$cmd_body\"|uid $uid|cid $cid"
       exit 0
     }
-    msg_send "$(dig "$cmd_body")"
+    msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+    msg_send "\`\`\`$(dig "$cmd_body")\`\`\`"
   ;;
   whois)
     msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
