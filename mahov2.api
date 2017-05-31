@@ -63,17 +63,18 @@ function msg_send {
 }
 
 # Init bot environment
-jq -cr '.message' <<< "$QUERY_STRING_POST" | while read msg; do {
+jq -cr '.message' <<< "$QUERY_STRING_POST" | {
+  read msg
   [ "$msg" = null ] && {
     log "No message was got from update. Maybe it is not a 'message'. Try set allowed_updates in setWebhook."
     exit 0
   }
-  jq -cr '.message_id, .text, .chat, .from' <<< "$msg" | while read mid; do {
-    read text; read chat; read from
-    jq -cr '.id, .first_name, .last_name, .username, .language_code' <<< "$from" | while read uid; do {
-      read u_fn; read u_ln; read u_un; read u_lang
-      jq -cr '.id, .type, .title, .username, .first_name, .last_name' <<< "$chat" | while read cid; do {
-        read c_type; read c_title; read c_un; read c_fn; read c_ln
+  jq -cr '.message_id, .text, .chat, .from' <<< "$msg" | {
+    read mid; read text; read chat; read from
+    jq -cr '.id, .first_name, .last_name, .username, .language_code' <<< "$from" | {
+      read uid; read u_fn; read u_ln; read u_un; read u_lang
+      jq -cr '.id, .type, .title, .username, .first_name, .last_name' <<< "$chat" | {
+        read cid; read c_type; read c_title; read c_un; read c_fn; read c_ln
         # Init env done, message info stored as:
         #   $text    : Message Text
         #   $mid     : Message ID
@@ -108,7 +109,7 @@ jq -cr '.message' <<< "$QUERY_STRING_POST" | while read msg; do {
         }
         log "Procressing: cmd $cmd|body \"$cmd_body\"|handler $handler_cmd"
         . $handler_cmd
-      }; done
-    }; done
-  }; done
-}; done
+      }
+    }
+  }
+}
