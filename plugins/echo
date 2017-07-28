@@ -1,0 +1,3 @@
+#!/bin/bash
+
+NO_REPLY=true msg_send "$u_fn $u_ln: $cmd_body"

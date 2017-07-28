@@ -42,7 +42,7 @@ case $cmd in
       exit 0
     }
     msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
-    msg_send "\`\`\`$(dig "$cmd_body")\`\`\`"
+    msg_send "\`\`\`$(dig $cmd_body)\`\`\`"
   ;;
   whois)
     msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
@@ -61,7 +61,7 @@ case $cmd in
     msg_send "\`\`\`$(whob <<< "$cmd_body")\`\`\`"
   ;;
   dice)
-    [ -z "$dice" ] && {
+    [ -z "$cmd_body" ] && {
       msg_send "用法：/dice <项目> [项目] [项目] ... [项目]" 
       exit 0
     }

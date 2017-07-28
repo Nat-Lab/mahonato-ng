@@ -1,0 +1,28 @@
+#!/bin/bash
+
+EXAPI='https://api.e-hentai.org/api.php'
+
+function exinfo {
+  [[ -z $2 ]] && return 1
+  infos="$(curl -s $EXAPI -H "Content-Type: application/json" -X POST --data "{
+  \"method\": \"gdata\",
+  \"gidlist\": [
+    [
+      $1, \"$2\"
+    ]
+  ]
+}" | jq '.gmetadata []')"
+	jq '.thumb, .title_jpn' <<< "$infos" | tr -d '"'
+	echo "标签：$(jq -c '.tags' <<< "$infos")"
+}
+
+function e-hentai {
+  [[ $text == *'exhentai.org/g/'* ]] || return 0 
+  target="$(awk -F"exhentai.org/g/" '{print $2}' <<< "$text")" 
+  id="$(cut -d'/' -f1 <<< "$target")" 
+  token="$(cut -d'/' -f2 <<< "$target")" 
+  log "exinfo $id $token." 
+  [[ ! -z $id && ! -z $token ]] && msg_send "$(exinfo "$id" "$token")" 
+}
+
+add_msg_inspector e-hentai

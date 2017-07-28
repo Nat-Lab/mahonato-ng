@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Bot Username (w/o @)
-BOT_USERNAME=''
+BOT_USERNAME=""
 
-# Token
+# Telegram APIs
 TOKEN=''
 
 # APIs
@@ -62,7 +62,7 @@ function msg_send {
   }
   send=$(iconv -f utf-8 -t utf-8//IGNORE <<< "$1")
   for arg in $msg_send_OPTIONS; do earg="$earg -F $arg"; done
-  [[ ! $c_type == "private" ]] && earg="$earg -F reply_to_message_id=$mid"
+  [[ ! $c_type == "private" && -z "$NO_REPLY" ]] && earg="$earg -F reply_to_message_id=$mid"
   log "API reply: $(curl -s "$URL/sendMessage" $earg -F "chat_id=$cid" -F "text=$send")"
 }
 

@@ -5,14 +5,14 @@ case $cmd in
         konachan_tag|yande_tag)
                 [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
                 case $cmd in
-                        konachan) server="https://konachan.com"; provider="konachan";;
-                        yande) server="https://yande.re"; provider="yande";;
+                        konachan_tag) server="https://konachan.com"; provider="konachan";;
+                        yande_tag) server="https://yande.re"; provider="yande";;
                         *) exit 0;;
                 esac
                 [[ ! -z "$cmd_body" ]] && {
-                        list=$(curl -s "$server/post.xml" -d "limit=100" -d "tags=$cmd_body" | awk -F"jpeg_url=\"" '{print $2}' | awk -F\" '{print $1}')
+                        list="$(curl --http1.1 -s "$server/post.xml" -d "limit=100" -d "tags=$cmd_body" | awk -F"jpeg_url=\"" '{print $2}' | awk -F\" '{print $1}')"
                         send="$(sed '1,2d;' <<< "$list" | shuf -n1)"
-                        [[ -z $send ]] && send="没有抓到图。"
+                        [[ -z "$send" ]] && send="没有抓到图。"
                         msg_send "$send"
                 } || msg_send "用法：/${provider}_tag <tag> [tag] ..."
         ;;

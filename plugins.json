@@ -27,5 +27,9 @@
    "./plugins/bd_translate": ["tr"],
    "./plugins/cconv": ["cconv"],
    "./plugins/bmi": ["bmi"],
-   "./plugins/mute": ["mute", "unmute", "mutelist"]
+   "./plugins/mute": ["mute", "unmute", "mutelist"],
+   "./plugins/echo": ["echo"],
+   "./plugins/airport": ["airport"],
+   "./plugins/metar": ["metar"],
+   "./plugins/taf": ["taf"]
 }

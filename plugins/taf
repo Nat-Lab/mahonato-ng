@@ -1,0 +1,5 @@
+#!/bin/bash
+
+msg_send_OPTIONS="parse_mode=Markdown"
+
+[ ! -z "$cmd_body" ] && msg_send "\`$(curl -s 'http://avwx.rest/api/taf/'"$cmd_body" | jq -cr '."Raw-Report"')\`" || msg_send "用法： \`/taf <ICAO>\`"

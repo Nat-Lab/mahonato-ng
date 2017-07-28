@@ -1,0 +1,22 @@
+#!/bin/bash
+
+icao_data='./res/icao.csv'
+
+function airport {
+  echo; echo "Airport(s): "
+  grep -i "$1" < "$icao_data" | while read data; do {
+    echo "---"
+    [ -z "$data" ] && echo "No airport found." && return 1
+    name="$(cut -d, -f2 <<< "$data")"
+    icao="$(cut -d, -f6 <<< "$data")"
+    city="$(cut -d, -f3 <<< "$data")"
+    airport="$(cut -d, -f5 <<< "$data")"
+    cc="$(cut -d, -f4 <<< "$data")"
+    location="$(cut -d, -f7,8 <<< "$data")"
+    echo -e "$name\n$icao/$airport\n$city, $cc\n$location" | tr -d '"'
+  }; done
+}
+
+msg_send_OPTIONS="parse_mode=Markdown"
+[ -z "$cmd_body" ] && msg_send "用法：/airport <ICAO/Airport Name/City>" && exit 0
+msg_send "\`\`\`$(airport "$cmd_body")\`\`\`"

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 [[ ! $c_type == *"group" ]] && msg_send "这不是一个群组，不能进行管理。" && exit 0
 curl -s "$URL/getChatMember" -d "chat_id=$cid" -d "user_id=$uid" | jq -cr '.result .status' | {
   read stus

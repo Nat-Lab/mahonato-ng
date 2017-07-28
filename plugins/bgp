@@ -5,14 +5,14 @@ function cc_emoji {
 }
 
 function bgp {
-  api='https://api.bgpview.io/' query="$1" term="$2"
+  api='https://api.bgpview.io/' query="$1" term="$2" arg="$3"
 
   [ -z $query ] && {
     echo "usage: "
     echo "\`/bgp <IP/IPv6>\` IP/IPv6 info"
     echo "\`/bgp <ASxxx>\` AS info"
     echo "\`/bgp peer <ASN>\` AS peer list"
-    echo "\`/bgp prefix <ASN>\` AS prefix list"
+    echo "\`/bgp prefix <ASN> [v4|v6]\` AS prefix list"
     echo "\`/bgp <desc>\` lookup ASN/Prefixes by desc/name"
     exit 1
   }
@@ -52,7 +52,10 @@ function bgp {
           }
         ;;
         prefix)
-          jq -cr '.ipv4_prefixes, .ipv6_prefixes | 
+          [ "$arg" = "v4" ] && cr='.ipv4_prefixes'
+          [ "$arg" = "v6" ] && cr='.ipv6_prefixes'
+          [ -z "$cr" ] && cr='.ipv4_prefixes, .ipv6_prefixes'
+          jq -cr "$cr"' | 
                   .[] | 
                   .prefix, .name, .description, .country_code' \
             | while read prefix; do {
