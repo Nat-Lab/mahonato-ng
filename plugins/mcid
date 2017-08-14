@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function _mcid_get {
+  jq -cr '.[]' < './res/minecraft-items.json' | grep -i "$1" | head -n 10 | {
+    jq -cr '.type, .meta, .name, .text_type' | while read _type; do {
+      read _meta; read _name; read _tt
+      echo "$_type:$_meta \`$_tt\` $_name"
+    }; done
+  }
+}
+
+msg_send_OPTIONS="parse_mode=Markdown"
+
+[ ! -z "$cmd_body" ] && msg_send "$(_mcid_get "$cmd_body")" || msg_send "用法： \`/mcid <keyword>\`"

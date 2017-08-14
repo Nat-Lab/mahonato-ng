@@ -31,5 +31,6 @@
    "./plugins/echo": ["echo"],
    "./plugins/airport": ["airport"],
    "./plugins/metar": ["metar"],
-   "./plugins/taf": ["taf"]
+   "./plugins/taf": ["taf"],
+   "./plugins/mcid": ["mcid"]
 }
