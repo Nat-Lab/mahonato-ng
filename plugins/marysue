@@ -1,9 +1,8 @@
 #!/bin/bash
 
-MARYSUE_API='http://marysue.funnyjs.com/api'
+MARYSUE_API='https://sulian.me/marysue-encoder/api'
 MARYSUE_ENC=$MARYSUE_API'/encode'
 MARYSUE_DEC=$MARYSUE_API'/decode'
-exit 0
 
 marysue() {
         [[ -z $2 ]] && return 1
