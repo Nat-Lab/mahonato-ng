@@ -9,19 +9,21 @@ function bgp {
 
   [ -z $query ] && {
     echo "usage: "
-    echo "\`/bgp <IP/IPv6>\` IP/IPv6 info"
-    echo "\`/bgp <ASxxx>\` AS info"
+    echo "\`/bgp as <ASN>\` AS info"
     echo "\`/bgp peer <ASN>\` AS peer list"
     echo "\`/bgp prefix <ASN> [v4|v6]\` AS prefix list"
+    echo "\`/bgp ix <ASN>\` AS IX list"
     echo "\`/bgp <desc>\` lookup ASN/Prefixes by desc/name"
+    echo "\`/bgp <IP/IPv6>\` IP/IPv6 info"
     exit 1
   }
 
-  [[ $query =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]] && act=ip verb=ip/$query 
+  [[ $query =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]] && act=ip verb=ip/$query
   [[ $query =~ ^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$ ]] && act=ip verb=ip/$query
   [[ $query == "peer" ]] && act=peer verb=asn/$term/peers
   [[ $query == "prefix" ]] && act=prefix verb=asn/$term/prefixes
-  [[ $query =~ ^AS[0-9]* ]] && act=asn verb=asn/$(tr -d '[:alpha:]' <<< "$query")
+  [[ $query == "ix" ]] && act=ix verb=asn/$term/ixs
+  [[ $query == "as" ]] && act=asn verb=asn/$term
   [ -z $act ] && act=search verb="search?query_term=$*"
 
   curl -s --max-time 5 "$api$verb" | {
@@ -33,7 +35,7 @@ function bgp {
     }
     jq -rc '.data' <<< "$res" | {
       case $act in
-        asn) 
+        asn)
           jq -cr '.asn, .name, .description_short, .country_code' | {
             read asn; read name; read desc; read cc
 	    echo "$(cc_emoji $cc) [AS${asn}](https://bgpview.io/asn/${asn}) *${name}* _${desc}_"
@@ -55,8 +57,8 @@ function bgp {
           [ "$arg" = "v4" ] && cr='.ipv4_prefixes'
           [ "$arg" = "v6" ] && cr='.ipv6_prefixes'
           [ -z "$cr" ] && cr='.ipv4_prefixes, .ipv6_prefixes'
-          jq -cr "$cr"' | 
-                  .[] | 
+          jq -cr "$cr"' |
+                  .[] |
                   .prefix, .name, .description, .country_code' \
             | while read prefix; do {
               read name; read desc; read cc
@@ -71,12 +73,21 @@ function bgp {
               jq -cr '.[] | .asn, .name, .description, .country_code' <<< "$data" | \
               while read asn; do {
                 read name; read desc; read cc
-		echo "$(cc_emoji $cc) [AS${asn}](https://bgpview.io/asn/${asn}) *${name}* _${desc}_ IP${ptr}"
+                echo "$(cc_emoji $cc) [AS${asn}](https://bgpview.io/asn/${asn}) *${name}* _${desc}_ IP${ptr}"
               }; done
             }; done
           }
         ;;
-        ip) 
+        ix)
+          jq -cr '.[] | .name, .name_full, .country_code, .ipv4_address, .ipv6_address' | \
+          while read name; do {
+            read fullname; read cc; read v4; read v6
+            echo "$(cc_emoji $cc) *${name}* _${fullname}_
+v4: \`${v4}\`
+v6: \`${v6}\`"
+          }; done
+        ;;
+        ip)
           jq -cr '.ip, .ptr_record, .prefixes' | while read ip; do {
             read ptr; read pfx
             echo "\`$ip\` ($ptr)"
@@ -85,7 +96,7 @@ function bgp {
               read name; read desc; read cc; read asn; read as_desc; read acc
 	      echo "$(cc_emoji $cc) [${prefix} ${name}](https://bgpview.io/prefix/${prefix}) (_${desc}_) *from* $(cc_emoji $acc) [AS${asn} ${as_desc}](https://bgpview.io/asn/${asn})"
             }; done
-          }; done 
+          }; done
         ;;
         search)
           jq -cr '.asns, .ipv4_prefixes, .ipv6_prefixes' | {
@@ -105,7 +116,7 @@ function bgp {
         ;;
       esac
     }
-  } 
+  }
 }
 
 msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
