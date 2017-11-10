@@ -1,0 +1,17 @@
+#!/bin/bash
+
+query=${cmd_body:-$c_un}
+
+msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+
+[ -z "$query" ] && msg_send "用法： \`/taf [用户名]\`"
+query=$(tr -d '@' <<< "$query")
+
+curl -s https://t.me/$query/ | grep -E "og:(image|title|description)" | cut -d\" -f4 | {
+  read desc; read url; read bio
+  [ "$url" = "https://telegram.org/img/t_logo.png" ] && msg_send "没有那个用户。" && return 0
+  dc="$(sed -e 's/^https:\/\///; s/\.telesco\.pe.*$//; s/cdn/dc/' <<< "$url")"
+  msg_send "[@$query](https://t.me/$query/) ($desc) Information
+*Datacenter*: $dc
+*Bio*: $bio"
+}
