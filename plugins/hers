@@ -1,10 +1,11 @@
 #!/bin/bash
 
+msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+[ -z "$cmd_body" ] && msg_send "用法： \`/hers <query>\`" && exit 0
+
 tmp="$(mktemp -d)"
 
 cd "$tmp"
-
-msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
 
 exec 3<>/dev/tcp/route-server.he.net/23
 
