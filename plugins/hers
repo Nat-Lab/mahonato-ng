@@ -1,0 +1,29 @@
+#!/bin/bash
+
+tmp="$(mktemp -d)"
+
+cd "$tmp"
+
+msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+
+exec 3<>/dev/tcp/route-server.he.net/23
+
+for ((i=0; i < 39; i++)); do {
+  read -t1 <&3 # skip banner
+}; done
+
+echo "$cmd_body" >&3
+
+while read -t1 buffer; do {
+  body="$body"$'\n'"$buffer"
+}; done <&3
+
+body="$(tr -d '' <<< "$body" | sed '1,2d')"
+echo "$body" | split -b 4090
+
+for part in x*; do {
+  msg_send "\`\`\`
+$(cat $part)\`\`\`"
+}; done
+
+rm -rf "$tmp"

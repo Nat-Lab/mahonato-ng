@@ -33,5 +33,6 @@
    "./plugins/metar": ["metar"],
    "./plugins/taf": ["taf"],
    "./plugins/mcid": ["mcid"],
-   "./plugins/dc": ["dc"]
+   "./plugins/dc": ["dc"],
+   "./plugins/hers": ["hers"]
 }
