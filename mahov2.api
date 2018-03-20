@@ -110,9 +110,9 @@ jq -cr '.message' <<< "$QUERY_STRING_POST" | {
         cmd="$(cut -d' ' -f1 <<< "$text")"
         [[ "$cmd" == *"@"* ]] && {
           to_bot="$(cut -d'@' -f2 <<< "$cmd")"
-          [[ ! "$to_bot" == "$BOT_USERNAME" ]] && exit 0 
+          [[ ! "$to_bot" == "$BOT_USERNAME" ]] && exit 0
         }
-        cmd_body="$(awk -F"$cmd " '{print $2}' <<< "$text")"
+        [ -z "$cmd_body" ] && cmd_body="$(awk -F"$cmd " '{print $2}' <<< "$text")"
         cmd="$(sed -e 's/@'$BOT_USERNAME'//; s/\///;' <<< "$cmd")"
         handler_cmd="$(find_handler "$cmd")"
         [ -z $handler_cmd ] && {

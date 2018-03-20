@@ -1,0 +1,11 @@
+#!/bin/bash
+
+function reply_msg {
+  local repl_msg="$(jq -cr '.message .reply_to_message .text' <<< "$QUERY_STRING_POST")"
+  [[ -z "$cmd_body" && ! -z "$repl_msg" && "$repl_msg" != null ]] && {
+    log "reply to message: \"$repl_msg\", use as cmd_body."
+    cmd_body=$repl_msg
+  }
+}
+
+add_msg_inspector reply_msg
