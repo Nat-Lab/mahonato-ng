@@ -34,5 +34,6 @@
    "./plugins/taf": ["taf"],
    "./plugins/mcid": ["mcid"],
    "./plugins/dc": ["dc"],
-   "./plugins/hers": ["hers"]
+   "./plugins/hers": ["hers"],
+   "./plugins/map64": ["map64", "map46"]
 }

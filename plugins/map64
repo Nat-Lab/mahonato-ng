@@ -1,0 +1,30 @@
+#!/bin/bash
+
+declare -ia addr4_in
+
+map64 () {
+  addr4_in6="$(sed -e 's/.*:://' <<< "$cmd_body")"
+  addr4_in[0]="$((16#$(cut -d':' -f1 <<< "$addr4_in6")))"
+  addr4_in[1]="$((16#$(cut -d':' -f2 <<< "$addr4_in6")))"
+
+  msg_send "\`$addr4_in6 => $((${addr4_in[0]} >> 8)).$((${addr4_in[0]} & 0xff)).$((${addr4_in[1]} >> 8)).$((${addr4_in[1]} & 0xff))\`"
+}
+
+map46 () {
+  addr4_in[0]="$(cut -d'.' -f1 <<< "$cmd_body")"
+  addr4_in[1]="$(cut -d'.' -f2 <<< "$cmd_body")"
+  addr4_in[2]="$(cut -d'.' -f3 <<< "$cmd_body")"
+  addr4_in[3]="$(cut -d'.' -f4 <<< "$cmd_body")"
+
+  msg_send "\`$cmd_body => $(printf "::%x:%x\n" "$(( (${addr4_in[0]} << 8) + ${addr4_in[1]} ))" "$(( (${addr4_in[2]} << 8) + ${addr4_in[3]} ))")\`"
+}
+
+msg_send_OPTIONS="parse_mode=Markdown"
+
+[ -z "$cmd_body" ] && msg_send "用法: \`/$cmd [addr]\`" && exit 1
+
+case $cmd in
+  map64) map64;;
+  map46) map46;;
+esac
+
