@@ -1,0 +1,4 @@
+#!/bin/bash
+
+[ -z "$cmd_body" ] && msg_send "用法: /couplet <词语>" && exit 0
+msg_send "$(curl -s "https://ai-backend.binwang.me/chat/couplet/$(python -c "import sys, urllib as ul; print ul.quote_plus(sys.argv[1])" "$cmd_body")" | jq -r ".output")"

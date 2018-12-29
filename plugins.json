@@ -35,5 +35,6 @@
    "./plugins/mcid": ["mcid"],
    "./plugins/dc": ["dc"],
    "./plugins/hers": ["hers"],
-   "./plugins/map64": ["map64", "map46"]
+   "./plugins/map64": ["map64", "map46"],
+   "./plugins/couplet": ["couplet"]
 }
