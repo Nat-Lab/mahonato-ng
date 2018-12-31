@@ -16,7 +16,10 @@ function curl {
     log "curl invoked, param: $*"
     read -p "what to do with this request? [(P)ass/(R)eject/(C)ustom] " _act </dev/tty
     case "$_act" in
-        p*|P*) log "passing curl request."; $CURL_BIN $* ;;
+        p*|P*)
+            log "passing curl request, respond: "
+            echo "$($CURL_BIN $*)" | tee /dev/stderr # add newline
+        ;;
         r*|R*) log "rejecting curl request.";return 1 ;;
         c*|C*) log "type the respond, end with EOF."; cat </dev/tty ;;
         *) log "unknow operation: $_act, rejecting request."; return 1 ;;
