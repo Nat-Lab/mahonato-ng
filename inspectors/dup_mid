@@ -1,0 +1,16 @@
+#!/bin/bash
+
+function dup_mid {
+    local t=$(mktemp)
+    tail -n100 cid_mid_pair > $t
+    mv $t cid_mid_pair
+
+    cat cid_mid_pair | grep -qE "^$cid:$mid$" && {
+        log "repeated $cid:$mid, bot API is resending, ignore."
+        exit 0
+    }
+
+    echo "$cid:$mid" >> cid_mid_pair
+}
+
+add_msg_inspector dup_mid
