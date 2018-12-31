@@ -121,7 +121,7 @@ v6: \`${v6}\`"
 
 msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
 bgp_res="$(bgp $cmd_body)"
-ns="$(wc -l <<< "$bgp_res")"
+lns="$(wc -l <<< "$bgp_res")"
 [ $lns -gt 20 ] && {
   msg_send "$(head -n20 <<< "$bgp_res")
 (Too many results, only first 20 resultes are shown.)"
