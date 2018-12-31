@@ -64,7 +64,7 @@ function msg_recv {
         return 0
     }
     log "procressing command: $cmd|body \"$cmd_body\"|handler $handler_cmd."
-    . $handler_cmd &
+    . $handler_cmd
     cmd_body=''
 }
 
