@@ -56,7 +56,7 @@ function add_msg_inspector {
 
 # msg_send: Send Message
 function msg_send {
-  [ -z $1 ] && {
+  [ -z "$1" ] && {
     log "didn't sent message, body is empty."
     return 1
   }

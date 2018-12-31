@@ -1,0 +1,108 @@
+#!/bin/bash
+
+trap 'quit' 2 15
+
+b=$(tput bold)
+n=$(tput sgr0)
+
+PLUGINS_CONF=./plugins.json
+
+function log {
+    local call_stack="$(tr ' ' '/' <<< "${FUNCNAME[@]:1}")"
+    echo "$b[$call_stack]$n $1" >&2
+}
+
+function find_handler {
+    jq -cr 'to_entries [] | select(.value | index("'$1'")) | .key' "$PLUGINS_CONF"
+}
+
+function add_msg_inspector {
+    log "adding message inspector: $*"
+    MSG_ISPC="$MSG_ISPC $*"
+}
+
+function msg_send {
+    [[ ! $c_type == "private" && -z "$NO_REPLY" ]] && msg_send_OPTIONS="reply_to_message_id=$mid $msg_send_OPTIONS"
+    log "msg_send invoked, options: $msg_send_OPTIONS"
+    [  -z "$1" ] && {
+        log "empty message."
+    }
+    send=$(iconv -f utf-8 -t utf-8//IGNORE <<< "$1")
+    log "outgoing message: cid $cid|\"$send\""
+}
+
+function msg_recv {
+    [ ! -z "$1" ] && text="$1"
+    [ -z "$text" ] && log "empty message? from $uid@$cid." && return 0
+    log "incoming message: uid $uid|cid $cid|mid $mid|\"$text\""
+    for ispc in $MSG_ISPC; do {
+    log "executing inspector: $ispc"
+        $ispc
+    }; done
+    [[ ! "$text" == '/'* ]] && log "not a command, skipping command processing logic." && return 0
+    cmd="$(cut -d' ' -f1 <<< "$text")"
+    [[ "$cmd" == *"@"* ]] && {
+        to_bot="$(cut -d'@' -f2 <<< "$cmd")"
+        [[ ! "$to_bot" == "$BOT_USERNAME" ]] && log "not commanding me, abort." && return 0
+    }
+    [ -z "$cmd_body" ] && cmd_body="$(awk -F"$cmd " '{print $2}' <<< "$text")"
+    cmd="$(sed -e 's/@'$BOT_USERNAME'//; s/\///;' <<< "$cmd")"
+    handler_cmd="$(find_handler "$cmd")"
+    [ -z $handler_cmd ] && {
+        log "no handler for $cmd, abort"
+        return 0
+    }
+    log "procressing command: $cmd|body \"$cmd_body\"|handler $handler_cmd."
+    . $handler_cmd & # put in subshell so exit() in plugin won't exit debug shell.
+    wait
+}
+
+function quit {
+    exit 0
+}
+
+function eval_ {
+    shift 1
+    eval "$*"
+}
+
+function handler_exec {
+    . $1
+}
+
+echo "mahonato-ng plugin debugger"
+echo
+echo "debugger startup configuration, some mandatory ENV needed:"
+read -p "LC_ALL [zh_CN.utf-8]: " LC_ALL
+read -p "TZ [Asia/Shanghai]: " TZ
+read -p "BOT_USERNAME [mahonato_bot]: " BOT_USERNAME
+read -p 'mid [$RANDOM]: ' mid
+read -p 'uid [$RANDOM]: ' uid
+read -p 'uid [-$RANDOM]: ' cid
+read -p 'u_fn [Maho]: ' u_fn
+read -p 'u_ln [Morichika]: ' u_ln
+read -p 'c_title [Nato Lab]: ' c_title
+read -p 'c_type [group]: ' c_type
+mid="${mid:-$RANDOM}"; uid="${uid:-$RANDOM}"; cid="${cid:--$RANDOM}"
+u_fn="${u_fn:-Maho}"; u_ln="${u_ln:-Morichika}";
+u_un="${u_un:-magicnat}"; c_title="${c_title:-Nato Lab}"; c_type="${c_type:-group}"
+
+LC_ALL="${LC_ALL:-zh_CN.utf-8}"
+TZ="${TZ:-Asia/Shanghai}"
+BOT_USERNAME="${BOT_USERNAME:-mahonato_bot}"
+
+for INSP in inspectors/*; do {
+  . $INSP
+}; done
+
+while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
+    [ -z "$expr_" ] && continue
+    history -s "$expr_"
+    case "$expr_" in
+        eval*) $expr_ ;;
+        echo*) eval "$expr_" ;;
+        send*) msg_recv "$expr_" ;;
+        exit*) quit ;;
+        *) text="$expr_"; msg_recv "$expr_" ;;
+    esac
+done
