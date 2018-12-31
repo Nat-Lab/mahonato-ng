@@ -4,7 +4,7 @@ query=${cmd_body:-$c_un}
 
 msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
 
-[ -z "$query" ] && msg_send "用法： \`/taf [用户名]\`"
+[ -z "$query" ] && msg_send "用法： \`/dc [用户名]\`" && return 0
 query=$(tr -d '@' <<< "$query")
 
 curl -s https://t.me/$query/ | grep -E "og:(image|title|description)" | cut -d\" -f4 | {
