@@ -55,6 +55,7 @@ function msg_recv {
     log "procressing command: $cmd|body \"$cmd_body\"|handler $handler_cmd."
     . $handler_cmd & # put in subshell so exit() in plugin won't exit debug shell.
     wait
+    cmd_body=''
 }
 
 function quit {
@@ -101,8 +102,6 @@ while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     case "$expr_" in
         eval*) $expr_ ;;
         echo*) eval "$expr_" ;;
-        send*) msg_recv "$expr_" ;;
-        exit*) quit ;;
-        *) text="$expr_"; msg_recv "$expr_" ;;
+        *) msg_recv "$expr_" ;;
     esac
 done
