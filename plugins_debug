@@ -12,6 +12,17 @@ function log {
     echo "$b[$call_stack]$n $1" >&2
 }
 
+function curl {
+    log "curl invoked, param: $*"
+    read -p "what to do with this request? [(P)ass/(R)eject/(C)ustom] " _act </dev/tty
+    case "$_act" in
+        p*|P*) log "passing curl request."; $CURL_BIN $* ;;
+        r*|R*) log "rejecting curl request.";return 1 ;;
+        c*|C*) log "type the respond, end with EOF."; cat </dev/tty ;;
+        *) log "unknow operation: $_act, rejecting request."; return 1 ;;
+    esac
+}
+
 function find_handler {
     jq -cr 'to_entries [] | select(.value | index("'$1'")) | .key' "$PLUGINS_CONF"
 }
@@ -53,8 +64,7 @@ function msg_recv {
         return 0
     }
     log "procressing command: $cmd|body \"$cmd_body\"|handler $handler_cmd."
-    . $handler_cmd & # put in subshell so exit() in plugin won't exit debug shell.
-    wait
+    . $handler_cmd &
     cmd_body=''
 }
 
@@ -74,6 +84,7 @@ function handler_exec {
 echo "mahonato-ng plugin debugger"
 echo
 echo "debugger startup configuration, some mandatory ENV needed:"
+read -p "CURL_BIN [/usr/bin/curl]: " CURL_BIN
 read -p "LC_ALL [zh_CN.utf-8]: " LC_ALL
 read -p "TZ [Asia/Shanghai]: " TZ
 read -p "BOT_USERNAME [mahonato_bot]: " BOT_USERNAME
@@ -84,6 +95,7 @@ read -p 'u_fn [Maho]: ' u_fn
 read -p 'u_ln [Morichika]: ' u_ln
 read -p 'c_title [Nato Lab]: ' c_title
 read -p 'c_type [group]: ' c_type
+
 mid="${mid:-$RANDOM}"; uid="${uid:-$RANDOM}"; cid="${cid:--$RANDOM}"
 u_fn="${u_fn:-Maho}"; u_ln="${u_ln:-Morichika}";
 u_un="${u_un:-magicnat}"; c_title="${c_title:-Nato Lab}"; c_type="${c_type:-group}"
@@ -91,6 +103,7 @@ u_un="${u_un:-magicnat}"; c_title="${c_title:-Nato Lab}"; c_type="${c_type:-grou
 LC_ALL="${LC_ALL:-zh_CN.utf-8}"
 TZ="${TZ:-Asia/Shanghai}"
 BOT_USERNAME="${BOT_USERNAME:-mahonato_bot}"
+CURL_BIN="${CURL_BIN:-/usr/bin/curl}"
 
 for INSP in inspectors/*; do {
   . $INSP
@@ -102,6 +115,10 @@ while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     case "$expr_" in
         eval*) $expr_ ;;
         echo*) eval "$expr_" ;;
-        *) msg_recv "$expr_" ;;
+        *)
+          msg_recv "$expr_" &
+          wait
+          let mid++
+        ;; # put in subshell so exit() in plugin won't exit debug shell.
     esac
 done
