@@ -17,8 +17,21 @@ function curl {
     read -p "what to do with this request? [(P)ass/(R)eject/(C)ustom] " _act </dev/tty
     case "$_act" in
         p*|P*)
-            log "passing curl request, respond: "
-            echo "$($CURL_BIN "$@")" | tee /dev/stderr # add newline
+            log "passing curl request."
+            resp="$($CURL_BIN "$@")"
+            read -p "we got respond, what to do? [(P)ass/(E)dit] " __act </dev/tty
+            case $__act in
+                p*|P*) log "passing respond."; echo $resp;;
+                e*|E*)
+                    tmpf="$(mktemp)"
+                    [ -z "$tmpf" ] && log "error making temp file. " && return 1
+                    echo "$resp" > $tmpf
+                    vim $tmpf </dev/tty 1>&2 >/dev/tty
+                    log "passing edited respond."
+                    cat $tmpf
+               ;;
+               *) log "unknow action $__act, passing respond."; echo $resp;;
+            esac
         ;;
         r*|R*) log "rejecting curl request.";return 1 ;;
         c*|C*) log "type the respond, end with EOF."; cat </dev/tty ;;
@@ -114,10 +127,11 @@ for INSP in inspectors/*; do {
 
 while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     [ -z "$expr_" ] && continue
-    history -s "$expr_"
+    history -s -- "$expr_"
     case "$expr_" in
         eval*) $expr_ ;;
         echo*) eval "$expr_" ;;
+        +*|-*) log "set: $expr_"; set $expr_;;
         *)
           msg_recv "$expr_" &
           wait
