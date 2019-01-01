@@ -130,6 +130,7 @@ while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     history -s -- "$expr_"
     case "$expr_" in
         eval*) $expr_ ;;
+        lscmd*) cat $PLUGINS_CONF | jq -cr '. [][]';;
         echo*) eval "$expr_" ;;
         +*|-*) log "set: $expr_"; set $expr_;;
         *)
