@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MARYSUE_API='https://sulian.me/marysue-encoder/api'
+MARYSUE_API='https://funnyjs.com/marysue-encoder/api'
 MARYSUE_ENC=$MARYSUE_API'/encode'
 MARYSUE_DEC=$MARYSUE_API'/decode'
 
