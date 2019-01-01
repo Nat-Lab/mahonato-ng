@@ -28,7 +28,7 @@ function curl {
                     echo "$resp" > $tmpf
                     vim $tmpf </dev/tty 1>&2 >/dev/tty
                     log "passing edited respond."
-                    cat $tmpf
+                    cat $tmpf </dev/tty
                ;;
                *) log "unknow action $__act, passing respond."; echo $resp;;
             esac
