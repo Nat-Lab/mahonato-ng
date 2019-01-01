@@ -18,7 +18,7 @@ function curl {
     case "$_act" in
         p*|P*)
             log "passing curl request, respond: "
-            echo "$($CURL_BIN $*)" | tee /dev/stderr # add newline
+            echo "$($CURL_BIN "$@")" | tee /dev/stderr # add newline
         ;;
         r*|R*) log "rejecting curl request.";return 1 ;;
         c*|C*) log "type the respond, end with EOF."; cat </dev/tty ;;
