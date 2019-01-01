@@ -3,7 +3,6 @@
 case $cmd in
 
         konachan_tag|yande_tag)
-                [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
                 case $cmd in
                         konachan_tag) server="https://konachan.com"; provider="konachan";;
                         yande_tag) server="https://yande.re"; provider="yande";;
@@ -17,7 +16,6 @@ case $cmd in
                 } || msg_send "用法：/${provider}_tag <tag> [tag] ..."
         ;;
         konachan|yande)
-                [[ -e /tmp/inet4.dead ]] && msg_send "这个服务暂时不可用。" && exit 0
                 case $cmd in
                         konachan) server="https://konachan.com"; provider="konachan"; cA=4; cB=2;;
                         yande) server="https://yande.re"; provider="yande"; cA=6; cB=4;;
@@ -29,7 +27,7 @@ case $cmd in
                 [[ -z $url ]] && msg_send "拉不到图。" || msg_send "$url"
         ;;
         danbooru)
-                msg_send "https://danbooru.donmai.us$(curl -s 'https://danbooru.donmai.us/posts.json?limit=100' | jq '.[] .large_file_url' | shuf -n1 | sed -e 's/^"//; s/"$//;')"
+                msg_send "$(curl -s 'https://danbooru.donmai.us/posts.json?limit=100' | jq -cr '.[] .file_url' | shuf -n1)"
         ;;
 
 esac
