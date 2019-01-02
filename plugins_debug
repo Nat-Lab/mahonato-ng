@@ -1,9 +1,11 @@
 #!/bin/bash
 
-trap 'quit' 2 15
+trap 'quit' 2 3 15
 
 b=$(tput bold)
 n=$(tput sgr0)
+
+[ -z "$1" ] && {
 
 PLUGINS_CONF=./plugins.json
 
@@ -85,6 +87,11 @@ function msg_recv {
 }
 
 function quit {
+    read -p "save the session [y/N]" _act
+    case $_act in
+        y|Y) read -p "filename [$SESSION_NAME]: " _name; save "${_name:-$SESSION_NAME}";;
+        *) exit 0
+    esac
     exit 0
 }
 
@@ -95,6 +102,13 @@ function eval_ {
 
 function handler_exec {
     . $1
+}
+
+function save {
+    [ -z "$1" ] && log "no name supplied, using 'debug_session'"
+    local name="${1:-debug_session}"
+    set > "$name"
+    log "session saved as $name. load with $0 '$name'"
 }
 
 echo "mahonato-ng plugin debugger"
@@ -125,13 +139,22 @@ for INSP in inspectors/*; do {
   . $INSP
 }; done
 
+}
+
+[ ! -z "$1" ] && {
+    [ ! -e "$1" ] && echo "session $1 not found, exiting." && exit 1
+    . $1 1>&2 2>/dev/null
+    log "loaded session from $1"
+    SESSION_NAME=$1
+}
+
 while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     [ -z "$expr_" ] && continue
     history -s -- "$expr_"
     case "$expr_" in
         eval*) $expr_ ;;
         lscmd*) cat $PLUGINS_CONF | jq -cr '. [][]';;
-        echo*) eval "$expr_" ;;
+        echo*|save*) eval "$expr_" ;;
         +*|-*) log "set: $expr_"; set $expr_;;
         *)
           msg_recv "$expr_" &
@@ -140,3 +163,5 @@ while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
         ;; # put in subshell so exit() in plugin won't exit debug shell.
     esac
 done
+
+quit
