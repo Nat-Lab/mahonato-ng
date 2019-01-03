@@ -87,7 +87,7 @@ function msg_recv {
 }
 
 function quit {
-    read -p "save the session [y/N]" _act
+    read -p "save the session [y/N] " _act
     case $_act in
         y|Y) read -p "filename [$SESSION_NAME]: " _name; save "${_name:-$SESSION_NAME}";;
         *) exit 0
@@ -151,6 +151,7 @@ for INSP in inspectors/*; do {
 while IFS="" read -r -e -d $'\n' -p "$b?>$n " expr_; do
     [ -z "$expr_" ] && continue
     history -s -- "$expr_"
+    IFS=' '
     case "$expr_" in
         eval*) $expr_ ;;
         lscmd*) cat $PLUGINS_CONF | jq -cr '. [][]';;
