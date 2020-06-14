@@ -1,7 +1,7 @@
 #!/bin/bash
 
-metar_api="https://avwx.rest/api/metar"
+AVWX_API_TOKEN=""
 
 msg_send_OPTIONS="parse_mode=Markdown"
 
-[ ! -z "$cmd_body" ] && msg_send "\`$(curl -s "$metar_api/$cmd_body" | jq -cr '."sample"."raw"')\`" || msg_send "用法： \`/metar <ICAO>\`"
+[ ! -z "$cmd_body" ] && msg_send "\`$(curl -s "https://avwx.rest/api/metar/$cmd_body?token=$AVWX_API_TOKEN" | jq -cr '."sample"."raw"')\`" || msg_send "用法： \`/metar <ICAO>\`"

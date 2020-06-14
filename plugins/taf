@@ -1,5 +1,6 @@
 #!/bin/bash
 
 msg_send_OPTIONS="parse_mode=Markdown"
+AVWX_API_TOKEN=""
 
-[ ! -z "$cmd_body" ] && msg_send "\`$(curl -s 'http://avwx.rest/api/taf/'"$cmd_body" | jq -cr '."sample"."raw"')\`" || msg_send "用法： \`/taf <ICAO>\`"
+[ ! -z "$cmd_body" ] && msg_send "\`$(curl -s "http://avwx.rest/api/taf/$cmd_body?token=$AVWX_API_TOKEN" | jq -cr '."sample"."raw"')\`" || msg_send "用法： \`/taf <ICAO>\`"
