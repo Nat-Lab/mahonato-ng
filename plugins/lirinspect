@@ -26,11 +26,11 @@ getres() {
         *) {
             local rslt="`whois  "$1"`"
 
-            local arin_orgid=`grep "^OrgId:          " <<< "$rslt" | awk '{ print $2 }'`
+            local arin_orgid=`grep "^OrgId:          " <<< "$rslt" | tail -n1 | awk '{ print $2 }'`
             [ ! -z "$arin_orgid" ] && echo -e "% $1 is owned by $arin_orgid (ARIN).\n% other resources owned by $arin_orgid:" && arin "$arin_orgid"
             [ ! -z "$arin_orgid" ] && return 0
 
-            local other_orgid="`grep "^org:            " <<< "$rslt" | awk '{ print $2 }'`"
+            local other_orgid="`grep "^org:            " <<< "$rslt" | tail -n1 | awk '{ print $2 }'`"
             [ ! -z "$other_orgid" ] && echo -e "% $1 is owned by $other_orgid.\n% other resources owned by $other_orgid:" && getres "$other_orgid"
         };;
     esac
