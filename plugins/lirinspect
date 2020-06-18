@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 apnic () {
-    whois -h whois.apnic.net -i org "$1" -K | grep -v '%' | sed '/^$/d'
+    whois -h whois.apnic.net -i org "$1" -K -T aut-num,inetnum,inet6num | grep -v '%' | sed '/^$/d'
 }
 
 ripe () {
-    whois -h whois.ripe.net -i org "$1" -K | grep -v '%' | sed '/^$/d'
+    whois -h whois.ripe.net -i org "$1" -K -T aut-num,inetnum,inet6num | grep -v '%' | sed '/^$/d'
 }
 
 arin () {
