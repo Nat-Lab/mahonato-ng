@@ -36,5 +36,6 @@
    "./plugins/dc": ["dc"],
    "./plugins/hers": ["hers"],
    "./plugins/map64": ["map64", "map46"],
-   "./plugins/couplet": ["couplet"]
+   "./plugins/couplet": ["couplet"],
+   "./plugins/lirinspect": ["lirinspect"]
 }

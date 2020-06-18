@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+apnic () {
+    whois -h whois.apnic.net -i org "$1" -K | grep -v '%' | sed '/^$/d'
+}
+
+ripe () {
+    whois -h whois.ripe.net -i org "$1" -K | grep -v '%' | sed '/^$/d'
+}
+
+arin () {
+    local rslt="`curl -s "https://rdap.arin.net/registry/entity/$1"`"
+    [ `jq -cr '.errorCode' <<< "$rslt"` != null ] && echo "unknow entry: $1" && return 1;
+    local nets="`jq -cr '.networks | .[] .cidr0_cidrs []' <<< "$rslt"`"
+    grep v6prefix <<< "$nets" | jq -cr '. | "inet6num:       \(.v6prefix)/\(.length)"'
+    grep v4prefix <<< "$nets" | jq -cr '. | "inetnum:        \(.v4prefix)/\(.length)"'
+    jq -cr '.autnums | .[] .handle' <<< "$rslt" | sed 's/^/aut-num:        /'
+}
+
+getres() {
+    local query="${1^^}"
+    case "$query" in
+        ORG-*-RIPE) ripe "$query";;
+        ORG-*-AP) apnic "$query";;
+        *-*) arin "$query";;
+        *) {
+            local rslt="`whois  "$1"`"
+
+            local arin_orgid=`grep "^OrgId:          " <<< "$rslt" | awk '{ print $2 }'`
+            [ ! -z "$arin_orgid" ] && echo -e "% $1 is owned by $arin_orgid (ARIN).\n% other resources owned by $arin_orgid:" && arin "$arin_orgid"
+            [ ! -z "$arin_orgid" ] && return 0
+
+            local other_orgid="`grep "^org:            " <<< "$rslt" | awk '{ print $2 }'`"
+            [ ! -z "$other_orgid" ] && echo -e "% $1 is owned by $other_orgid.\n% other resources owned by $other_orgid:" && getres "$other_orgid"
+        };;
+    esac
+}
+
+getres "$1"
+
+msg_send_OPTIONS="disable_web_page_preview=true parse_mode=Markdown"
+
+[ -z "$cmd_body" ] && msg_send "usage: \`/lirinspect <KEY>\`
+\`where KEY := { org | inetnum | inet6num | autnum | ... }\`" && exit 0
+
+msg_send "\`\`\`
+`getres "$cmd_body"`
+\`\`\`"
