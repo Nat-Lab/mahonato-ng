@@ -32,6 +32,9 @@ getres() {
 
             local other_orgid="`grep "^org:            " <<< "$rslt" | tail -n1 | awk '{ print $2 }'`"
             [ ! -z "$other_orgid" ] && echo -e "% $1 is owned by $other_orgid.\n% other resources owned by $other_orgid:" && getres "$other_orgid"
+
+            local s_org="`grep "^sponsoring-org: " <<< "$rslt" | tail -n1 | awk '{ print $2 }'`"
+            [ ! -z "$s_org" ] && echo -e "% $other_orgid is sponsored by $s_org.\n% resources owned by $s_org:" && getres "$other_orgid"
         };;
     esac
 }
