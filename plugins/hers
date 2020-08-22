@@ -9,7 +9,7 @@ cd "$tmp"
 
 exec 3<>/dev/tcp/route-server.he.net/23
 
-for ((i=0; i < 39; i++)); do {
+for ((i=0; i < 45; i++)); do {
   read -t1 <&3 # skip banner
 }; done
 
